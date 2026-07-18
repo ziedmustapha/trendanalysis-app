@@ -3,6 +3,8 @@ import requests
 import xml.etree.ElementTree as ET
 import logging
 import json
+import sys
+from pathlib import Path
 import torch
 from transformers import AutoTokenizer, AutoModel
 from sklearn.metrics.pairwise import cosine_similarity
@@ -10,6 +12,10 @@ from sklearn.decomposition import PCA
 import plotly.graph_objs as go
 import matplotlib.colors as mcolors
 import numpy as np
+
+# Import Nestlé credentials / URL from shared config (loaded from .env)
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from config import auth_headers, url
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
@@ -394,15 +400,6 @@ def generate_cluster_names():
     data = request.json
     clusters = data['clusters']
 
-    headers = {
-        'client_id': 'REDACTED_CLIENT_ID',
-        'client_secret': 'REDACTED_CLIENT_SECRET'
-    }
-    deploymentName = 'ChatGPT'
-    action = 'chat'
-    action_extension = 'completions'
-    url = f'REDACTED_OPENAI_API_BASE_URL/deployments/{deploymentName}/{action}/{action_extension}?api-version=2023-07-01-preview'
-
     cluster_names = []
     for cluster in clusters:
         request_payload = {
@@ -424,7 +421,7 @@ def generate_cluster_names():
             ]
         }
 
-        req = requests.post(url, headers=headers, json=request_payload, verify=False)
+        req = requests.post(url, headers=auth_headers, json=request_payload, verify=False)
         res = req.json()
         cluster_name = f'"{res["choices"][0]["message"]["content"].strip()}"'
         cluster_names.append(cluster_name)
@@ -435,15 +432,6 @@ def generate_cluster_names():
 def identify_trends():
     data = request.json
     clusters = data['clusters']
-
-    headers = {
-        'client_id':'REDACTED_CLIENT_ID',
-        'client_secret':'REDACTED_CLIENT_SECRET'
-    }
-    deploymentName = 'ChatGPT'
-    action = 'chat'
-    action_extension = 'completions'
-    url = f'REDACTED_OPENAI_API_BASE_URL/deployments/{deploymentName}/{action}/{action_extension}?api-version=2023-07-01-preview'
 
     trends = []
     for cluster in clusters:
@@ -469,7 +457,7 @@ def identify_trends():
             ]
         }
 
-        req = requests.post(url, headers=headers, json=request_payload, verify=False)
+        req = requests.post(url, headers=auth_headers, json=request_payload, verify=False)
         res = req.json()
         trends.append(res["choices"][0]["message"]["content"])
 

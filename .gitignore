@@ -1,0 +1,24 @@
+# Secrets — never commit these
+.env
+SECRETS_INVENTORY.txt
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Node
+frontend/node_modules/
+frontend/package-lock.json
+
+# Local / runtime
+*.db
+.DS_Store
+.ipynb_checkpoints/
+*.log
+.vscode/
+.idea/

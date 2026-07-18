@@ -2,7 +2,7 @@ import torch
 import json
 import requests
 from transformers import AutoTokenizer, AutoModel
-from config import client_id, client_secret, url
+from config import auth_headers, url
 
 # Initialize the AI model
 tokenizer = AutoTokenizer.from_pretrained("allenai/specter")
@@ -44,12 +44,7 @@ def generate_cluster_name(cluster):
         ]
     }
 
-    headers = {
-        'client_id': client_id,
-        'client_secret': client_secret
-    }
-
-    req = requests.post(url, headers=headers, json=request_payload, verify=False)
+    req = requests.post(url, headers=auth_headers, json=request_payload, verify=False)
     res = req.json()
     return f'"{res["choices"][0]["message"]["content"].strip()}"'
 
@@ -102,11 +97,6 @@ def identify_trends_in_cluster(cluster):
         ]
     }
 
-    headers = {
-        'client_id': client_id,
-        'client_secret': client_secret
-    }
-
-    req = requests.post(url, headers=headers, json=request_payload, verify=False)
+    req = requests.post(url, headers=auth_headers, json=request_payload, verify=False)
     res = req.json()
     return res["choices"][0]["message"]["content"]
