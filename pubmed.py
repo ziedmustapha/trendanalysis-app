@@ -1,6 +1,15 @@
 import requests
 import xml.etree.ElementTree as ET
 import logging
+import re
+
+PUBMED_HEADERS = {
+    "User-Agent": "trendanalysis-app/1.0 (research; PubMed E-utilities)",
+}
+
+DOCTYPE_RE = re.compile(r"<!DOCTYPE[^>]*>", re.IGNORECASE)
+XML_DECL_RE = re.compile(r"<\?xml[^?]*\?>", re.IGNORECASE)
+
 
 def fetch_pubmed_data(query, mindate, maxdate, max_records):
     """
@@ -26,7 +35,7 @@ def fetch_pubmed_data(query, mindate, maxdate, max_records):
             'retmax': retmax,
             'retstart': retstart
         }
-        response = requests.get(base_url, params=params)
+        response = requests.get(base_url, params=params, headers=PUBMED_HEADERS, timeout=60)
         response.raise_for_status()
         root = ET.fromstring(response.content)
         ids = [id_tag.text for id_tag in root.findall('.//Id')]
@@ -48,6 +57,8 @@ def fetch_details(pubmed_ids):
     @param pubmed_ids - List of PubMed IDs to fetch details for
     @return Combined XML containing details for all PubMed IDs
     """
+    if not pubmed_ids:
+        return "<root></root>"
     url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
     retmax = 200
     all_details = []
@@ -59,11 +70,10 @@ def fetch_details(pubmed_ids):
             'id': ','.join(batch_ids),
             'retmode': 'xml'
         }
-        response = requests.get(url, params=params)
+        response = requests.get(url, params=params, headers=PUBMED_HEADERS, timeout=60)
         response.raise_for_status()
-        batch_xml = response.text
-        batch_xml = batch_xml.split('?>', 1)[-1].strip()
-        batch_xml = batch_xml.replace('<!DOCTYPE PubmedArticleSet PUBLIC "-//NLM//DTD PubMedArticle, 1st January 2024//EN" "https://dtd.nlm.nih.gov/ncbi/pubmed/out/pubmed_240101.dtd">', '')
+        batch_xml = XML_DECL_RE.sub("", response.text)
+        batch_xml = DOCTYPE_RE.sub("", batch_xml).strip()
         all_details.append(batch_xml)
 
     combined_xml = "<root>" + "".join(all_details) + "</root>"
@@ -85,11 +95,16 @@ def parse_article_metadata(xml_data):
     for article in root.findall('.//PubmedArticle'):
         article_data = {}
         title_element = article.find('.//ArticleTitle')
-        abstract_element = article.find('.//Abstract/AbstractText')
+        abstract_element = article.find('.//Abstract')
         pub_date_element = article.find('.//PubDate/Year')
+        if pub_date_element is None:
+            pub_date_element = article.find('.//ArticleDate/Year')
 
-        article_data['title'] = title_element.text if title_element is not None else 'No title available'
-        article_data['abstract'] = abstract_element.text if abstract_element is not None else 'No abstract available'
+        article_data['title'] = ''.join(title_element.itertext()).strip() if title_element is not None else 'No title available'
+        if abstract_element is not None:
+            article_data['abstract'] = ' '.join(abstract_element.itertext()).strip() or 'No abstract available'
+        else:
+            article_data['abstract'] = 'No abstract available'
         
         authors = []
         for author in article.findall('.//Author'):

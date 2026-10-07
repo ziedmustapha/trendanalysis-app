@@ -151,7 +151,8 @@ button:hover {
 }
 
 #clusterResults, #clusterNames {
-    height: 10%;
+    flex-shrink: 0;
+    max-height: 26%;
     overflow-y: auto;
     margin-bottom: 10px;
     background-color: #f9f9f9;
@@ -209,7 +210,8 @@ button:hover {
 
 .trend-dot {
     display: inline-block;
-    min-width: 3px;
+    min-width: 6px; /* matches the cluster legend's border width */
+    border-radius: 3px;
     height: 200px;
     margin-right: 10px;
 }

@@ -45,10 +45,15 @@ def get_from_cache(query, max_papers, present_year, new_papers, old_papers, sim_
     row = cursor.fetchone()
     conn.close()
     if row:
+        def _loads(value):
+            if value is None:
+                return None
+            return json.loads(value)
+
         return {
-            'clusters': json.loads(row[0]),
-            'cluster_names': json.loads(row[1]),
-            'trends': json.loads(row[2])
+            'clusters': _loads(row[0]),
+            'cluster_names': _loads(row[1]),
+            'trends': _loads(row[2])
         }
     return None
 
